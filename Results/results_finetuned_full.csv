@@ -1,1 +1,3 @@
-Model,Split,Batch_size,Initial_lr,Accuracy_epoch_10,Accuracy_epoch_20,Accuracy_epoch_30,Accuracy_epoc_40,Accuracy_epoch_50,Time
+Model,Split,Batch_size,Initial_lr,Accuracy_epoch_10,Accuracy_epoch_20,Accuracy_epoch_30,Accuracy_epoch_40,Accuracy_epoch_50,Time
+resnet18_finetuned_full,70 - 30,64,0.0005,43.4861111111111,47.7083333333334,44.9861111111111,47.3263888888889,47.6388888888889,16899.6461429596
+resnet18_finetuned_full,70 - 30,64,0.001,"tensor(37.9444, device='cuda:0')","tensor(43.5903, device='cuda:0')","tensor(43.0347, device='cuda:0')","tensor(43.6458, device='cuda:0')","tensor(43.7639, device='cuda:0')",18061.2116014957

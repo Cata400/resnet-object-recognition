@@ -1,1 +1,3 @@
-Model,Split,Batch_size,Initial_lr,Accuracy_epoch_10,Accuracy_epoch_20,Accuracy_epoch_30,Accuracy_epoc_40,Accuracy_epoch_50,Time
+Model,Split,Batch_size,Initial_lr,Accuracy_epoch_10,Accuracy_epoch_20,Accuracy_epoch_30,Accuracy_epoc_40,Accuracy_epoch_50,Time,Accuracy_epoch_40
+resnet18_freeze_conv,70 - 30,64,0.001,50.27083587646485,50.28471374511719,50.08332824707031,,50.34027862548828,8631.538401842117,50.19443893432617
+resnet18_freeze_conv,70 - 30,64,0.001,50.826377868652344,50.72222137451172,50.576377868652344,,50.6249885559082,8492.01295542717,50.61805725097656

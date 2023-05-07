@@ -1,3 +1,4 @@
+import datetime
 import os
 import time
 import torch
@@ -10,23 +11,32 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from torch.utils.tensorboard import SummaryWriter
 
 
+class Gray2RGB(object):
+    def __call__(self, image):
+        if image.shape[0] == 1:
+            image = image.repeat(3, 1, 1)
+            
+        return image
+
+
 def train(model, train_loader, test_loader, optimizer, criterion, epochs, device, scheduler, save_model_name):
     start = time.time()
     test_accuracies = []
-    writer = SummaryWriter(log_dir='Logs')
+    writer = SummaryWriter(log_dir='Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     
     for epoch in range(epochs):
         print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
         
         model.train()
-        train_iter_loss = 0.0
-        train_iter_acc = 0
+        train_iter_loss = torch.zeros(1, device=device)
+        train_iter_acc = torch.zeros(1, device=device)
         
-        for x, y in train_loader:
+        for i, (x, y) in enumerate(train_loader):
+            # print(f'Iteration {i + 1}/{len(train_loader)}')
             x, y = x.to(device), y.to(device)
             
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             
             y_hat = model(x)
             loss = criterion(y_hat, y)
@@ -34,13 +44,11 @@ def train(model, train_loader, test_loader, optimizer, criterion, epochs, device
             loss.backward()
             optimizer.step()
             
-            train_iter_loss += loss.item() / len(train_loader)
-            train_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum().item() / len(train_loader)
+            train_iter_loss += loss / len(train_loader)
+            train_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum()/ len(train_loader)
         
         scheduler.step()
-        print(f'Training loss: {train_iter_loss:.4f}\t Training accuracy: {train_iter_acc:.4f}')
-        writer.add_scalar('Loss/train', train_iter_loss, epoch)
-        writer.add_scalar('Accuracy/train', train_iter_acc, epoch)
+        print(f'Training loss: {train_iter_loss.item():.4f}\t Training accuracy: {train_iter_acc.item():.4f}', flush=True)
         
         model.eval()
         test_iter_loss = 0.0
@@ -49,22 +57,23 @@ def train(model, train_loader, test_loader, optimizer, criterion, epochs, device
         for x, y in test_loader:
             x, y = x.to(device), y.to(device)
             
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
                         
             with torch.no_grad():
                 y_hat = model(x)
                 loss = criterion(y_hat, y)
             
-            test_iter_loss += loss.item() / len(test_loader)
-            test_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum().item() / len(test_loader)
+            test_iter_loss += loss / len(test_loader)
+            test_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum() / len(test_loader)
             
-        print(f'Test loss: {test_iter_loss:.4f}\t Test accuracy: {test_iter_acc:.4f}')
-        writer.add_scalar('Loss/test', test_iter_loss, epoch)
-        writer.add_scalar('Accuracy/test', test_iter_acc, epoch)
+        print(f'Test loss: {test_iter_loss.item():.4f}\t Test accuracy: {test_iter_acc.item():.4f}', flush=True)
+        
+        writer.add_scalars('Loss', {'train': train_iter_loss, 'test': test_iter_loss}, epoch)
+        writer.add_scalars('Accuracy', {'train': train_iter_acc, 'test': test_iter_acc}, epoch)
         
         if (epoch + 1) % 10 == 0:
-            torch.save(model.state_dict(), save_model_name + f'_{epoch + 1}.pth')
-            test_accuracies.append(test_iter_acc)
+            torch.save(model.state_dict(), os.path.join('Models', save_model_name + f'_{epoch + 1}.pth'))
+            test_accuracies.append(test_iter_acc.item())
         
         print()
         
