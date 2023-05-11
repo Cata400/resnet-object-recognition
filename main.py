@@ -18,10 +18,12 @@ if __name__ == '__main__':
     classes = sorted(os.listdir(classes_path))
     no_classes = len(classes)
     
-    save_model_name = 'resnet18_freeze_conv'
+    save_model_name = 'resnet50_freeze_conv'
     
     results_name = 'results_freeze_conv'
     results_path = os.path.join('Results', results_name + '.csv')
+    
+    logdir = os.path.join('Logs', 'log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # Hyperparameters
     batch_size = 64
@@ -35,7 +37,7 @@ if __name__ == '__main__':
     # Load and preprocess data
     # grayscale_imgs_count = check_dataset_shapes(classes_path)
     # print(f'Grayscale images count: {grayscale_imgs_count}')
-    
+        
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
@@ -61,8 +63,9 @@ if __name__ == '__main__':
     print(f'Using {device}')
     
     # Load model
-    model = resnet18(weights=ResNet18_Weights.DEFAULT)
+    model = resnet50(weights=ResNet50_Weights.DEFAULT)
     
+    # Freeze convolutional layers
     for param in model.parameters():
         param.requires_grad = False
         
@@ -74,9 +77,21 @@ if __name__ == '__main__':
     # Train model, save model every 10 epochs, monitor it using tensorboard, keep track of computation time
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.5)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
     
-    model, test_accuracies, training_time = train(model, train_dataloader, test_loader, optimizer, criterion, epochs, device, lr_scheduler, save_model_name)
+    model, test_accuracies_1, training_time_1 = train(model, train_dataloader, test_loader, optimizer, criterion, 0, epochs - 20, device, lr_scheduler, save_model_name, logdir)
+    
+    # Unfreeze convolutional layers
+    for param in model.parameters():
+        param.requires_grad = True
+                
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    
+    model, test_accuracies_2, training_time_2 = train(model, train_dataloader, test_loader, optimizer, criterion, epochs - 20, epochs, device, lr_scheduler, save_model_name, logdir)
+    
+    test_accuracies = test_accuracies_1 + test_accuracies_2
+    training_time = training_time_1 + training_time_2
     
     # Write the accuracies and time into a csv file
     results_df = pd.read_csv(results_path)

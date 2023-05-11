@@ -19,13 +19,16 @@ class Gray2RGB(object):
         return image
 
 
-def train(model, train_loader, test_loader, optimizer, criterion, epochs, device, scheduler, save_model_name):
+def train(model, train_loader, test_loader, optimizer, criterion, epochs_low, epochs_high, device, scheduler, save_model_name, logdir):
     start = time.time()
     test_accuracies = []
-    writer = SummaryWriter(log_dir='Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    writer = SummaryWriter(log_dir=logdir)
     
-    for epoch in range(epochs):
-        print(f'Epoch {epoch + 1}/{epochs}')
+    training_size = len(train_loader.dataset)
+    test_size = len(test_loader.dataset)
+
+    for epoch in range(epochs_low, epochs_high):
+        print(f'Epoch {epoch + 1}/{epochs_high}')
         print('-' * 10)
         
         model.train()
@@ -44,8 +47,8 @@ def train(model, train_loader, test_loader, optimizer, criterion, epochs, device
             loss.backward()
             optimizer.step()
             
-            train_iter_loss += loss / len(train_loader)
-            train_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum()/ len(train_loader)
+            train_iter_loss += loss / training_size
+            train_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum() / training_size
         
         scheduler.step()
         print(f'Training loss: {train_iter_loss.item():.4f}\t Training accuracy: {train_iter_acc.item():.4f}', flush=True)
@@ -63,8 +66,8 @@ def train(model, train_loader, test_loader, optimizer, criterion, epochs, device
                 y_hat = model(x)
                 loss = criterion(y_hat, y)
             
-            test_iter_loss += loss / len(test_loader)
-            test_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum() / len(test_loader)
+            test_iter_loss += loss / test_size
+            test_iter_acc += (y_hat.argmax(1) == y.argmax(1)).type(torch.float).sum() / test_size
             
         print(f'Test loss: {test_iter_loss.item():.4f}\t Test accuracy: {test_iter_acc.item():.4f}', flush=True)
         
@@ -78,7 +81,7 @@ def train(model, train_loader, test_loader, optimizer, criterion, epochs, device
         print()
         
     stop = time.time()
-    print(f'Training time: {stop - start:.2f} seconds')
+    print(f'Training time: {stop - start:.2f} seconds\n')
     writer.flush()
     writer.close()
     
