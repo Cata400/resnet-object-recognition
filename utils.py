@@ -136,3 +136,49 @@ def get_confusion_matrix(y_true, y_pred, labels, plot_cm=True, scale=10, print_a
     if print_acc:
         for i, cls in enumerate(cm):
             print(f'{labels[i]}: {np.round(100 * cls[i],2 )}% accuracy' )
+            
+            
+
+class MLP6(torch.nn.Module):
+    """
+    Multilayer perceptron with 6 hidden layers.
+
+    Attributes
+    ----------
+    input_size : int
+        Size of input.
+    no_classes : int
+        Number of classes.
+    flatten : torch.nn.Flatten
+        Flatten layer.
+    linear_relu_stack : torch.nn.Sequential
+        Sequential layer.
+    softmax : torch.nn.Softmax
+        Softmax layer.
+    """
+    def __init__(self, input_size, no_classes):
+        super(MLP6, self).__init__()
+        self.input_size = input_size
+        self.no_classes = no_classes
+        self.flatten = torch.nn.Flatten()
+        self.linear_relu_stack = torch.nn.Sequential(
+            torch.nn.Linear(self.input_size, 1024),
+            torch.nn.ReLU(),
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 512),
+            torch.nn.ReLU(),
+            torch.nn.Linear(512, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, self.no_classes),
+        )
+        
+    def forward(self, x):
+        x = self.flatten(x)
+        y = self.linear_relu_stack(x)
+        
+        return y

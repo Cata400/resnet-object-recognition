@@ -18,7 +18,7 @@ if __name__ == '__main__':
     classes = sorted(os.listdir(classes_path))
     no_classes = len(classes)
     
-    save_model_name = 'resnet50_freeze_conv'
+    save_model_name = 'resnet18_trained_freeze_conv'
     
     results_name = 'results_freeze_conv'
     results_path = os.path.join('Results', results_name + '.csv')
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     batch_size = 64
     lr = 1e-3
     epochs = 50
-    split = 0.7
+    split = 0.9
     
     torch.manual_seed(42)
     torch.backends.cudnn.benchmark = True
@@ -63,15 +63,16 @@ if __name__ == '__main__':
     print(f'Using {device}')
     
     # Load model
-    model = resnet50(weights=ResNet50_Weights.DEFAULT)
+    # model = MLP6(3 * 224 * 224, no_classes)
+    model = resnet18(weights=None)
     
     # Freeze convolutional layers
-    for param in model.parameters():
-        param.requires_grad = False
+    # for param in model.parameters():
+    #     param.requires_grad = False
         
     in_features_fc = model.fc.in_features
     model.fc = torch.nn.Linear(in_features_fc, no_classes)
-    model.to(device)
+    model = model.to(device)
     print(f'Model number of parameters: {count_parameters(model)}', flush=True)
     
     # Train model, save model every 10 epochs, monitor it using tensorboard, keep track of computation time
@@ -79,16 +80,19 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
     
-    model, test_accuracies_1, training_time_1 = train(model, train_dataloader, test_loader, optimizer, criterion, 0, epochs - 20, device, lr_scheduler, save_model_name, logdir)
+    model, test_accuracies_1, training_time_1 = train(model, train_dataloader, test_loader, optimizer, criterion, 0, epochs, device, lr_scheduler, save_model_name, logdir)
     
     # Unfreeze convolutional layers
-    for param in model.parameters():
-        param.requires_grad = True
+    # for param in model.parameters():
+    #     param.requires_grad = True
                 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     
-    model, test_accuracies_2, training_time_2 = train(model, train_dataloader, test_loader, optimizer, criterion, epochs - 20, epochs, device, lr_scheduler, save_model_name, logdir)
+    # model, test_accuracies_2, training_time_2 = train(model, train_dataloader, test_loader, optimizer, criterion, epochs - 20, epochs, device, lr_scheduler, save_model_name, logdir)
+    
+    test_accuracies_2 = []
+    training_time_2 = 0
     
     test_accuracies = test_accuracies_1 + test_accuracies_2
     training_time = training_time_1 + training_time_2
